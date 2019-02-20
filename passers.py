@@ -91,17 +91,50 @@ class Passer():
         # modified #
         ## NOTICE: only weights are maintained and combined into two dimensions, biases are ignored
         weights = []
-        [print("we get data type is {}, size is {}".format(type(f.data),f.size())) for f in self.network.parameters()]
+        weight_save = []
+        #[print("we get data type is {}, size is {}".format(type(f.data),f.size())) for f in self.network.parameters()]
         for index, var in enumerate(self.network.parameters()):
             if index % 2 == 0:
                 f = var.cpu().data.numpy().astype(np.float16) # var as Variable, type(var.data) is Tensor, should be transformed from cuda to cpu(),with type float16
                 weight = np.reshape(f, (f.shape[0], np.prod(f.shape[1:])))
                 print("weight size ==== ", weight.shape)
                 weights.append(weight)
-       
-        return weights
+        for li,w in enumerate(weights):
+            weight_save.append({'layer':li+1,'mean':np.mean(w), 'std':np.std(w), 'min': w.min(), 'max': w.max()})
 
+        return weights, weight_save
 
+    def get_structure_layer(self,layer=1):
+        # Check the weight we get and generate the gabor filter
+        # Layer 1 correlation 
+        var1 = list(self.network.parameters())[2*(layer-1)]
+        f = var1.cpu().data.numpy().astype(np.float16) # var1 as first layer Variable, type(var.data) is Tensor, should be transformed from cuda to cpu(),with type float16
+        l = len(f.shape)
+        if l > 2:        
+            weight = np.reshape(f, (f.shape[0]*f.shape[1], np.prod(f.shape[2:])))
+        else:
+            weight = f
+        return weight
+
+    def get_network_structure(self):
+        # Get layer information 
+        # e.g.: for conv2d: we get {input, output, stride, padding, kernel_size, weights}
+        #       for fc, we get {in, out, weights}
+        # print('---\n',self.loader)
+        layers = self.network.named_modules()
+        layer_info_dict = {}
+        for name, layer in layers:
+            tl = type(layer)
+            if tl == type(torch.nn.Conv2d(1,1,3)):
+                param = [p for p in layer.parameters()][0].data.cpu().numpy()
+                layer_info_dict[name] = {'name':'conv2d', 'in':layer.in_channels,'out':layer.out_channels, 'stride':layer.stride,'padding':layer.padding, 'ks':layer.kernel_size, 'weights':param}
+            elif tl == type(torch.nn.Linear(2,1)):
+                param = [p for p in layer.parameters()][0].data.cpu().numpy()
+                layer_info_dict[name] = {'name':'fc', 'in':layer.in_features,'out':layer.out_features, 'weights':param}
+            else:
+                pass
+                # print("Undefined",type(layer))
+        return layer_info_dict
 '''
 
 def train(net, trainloader, device, optimizer, criterion, do_optimization, shuffle_labels, n_batches):

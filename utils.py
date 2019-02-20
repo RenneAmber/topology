@@ -141,3 +141,108 @@ def save_splits(splits, split_size, save_dir, start_layer, epoch, threshold, tri
             print('Saving ... trl{}, epc{}, threshold{:1.2f}, layer{}, chunk{}, shape {}'.format(trial, epoch, threshold, start_layer+i_layer, i_chunk, chunk.shape))
             np.savetxt(path+'badj_epc{}_t{:1.2f}_trl{}.csv'.format(epoch, threshold, trial), chunk, fmt='%d', delimiter=",")
 
+def calculate_sum(weights, level, total_level):
+    weight_sum = 0
+    weight_count = 0
+    for w in weights:
+        if level<total_level:
+            s,c = calculate_sum(w, level+1, total_level)
+            weight_sum += s
+            weight_count += c
+        else:
+            weight_sum += w
+            weight_count += 1
+    return weight_sum, weight_count
+
+def calculate_std(weights, mean, level, total_level):
+    weight_std = 0
+    for w in weights:
+        if level<total_level:
+            weight_std += calculate_std(w, mean, level+1, total_level)
+        else:
+            weight_std += (w-mean)*(w-mean)
+    return weight_std
+
+def transform_distribution(weights, mean, std, level, total_level):
+    for i, w in enumerate(weights):
+        if level<total_level:
+            transform_distribution(w, mean, std, level+1, total_level)
+        else:
+            weights[i] = (w - mean)/std
+            if weights[i] < 0:
+                weights[i] = -weights[i]
+
+##### Update weights so as to satisfy some distribution
+def update_weights_to_normal_distribution(weights):
+    ### 1.2 Calcualte the mean and std of the whole weights ###
+        
+    weight_count = 0 
+    weight_sum = 0
+    weight_std = 0
+    ## (1) calculate the mean and count of the weights
+    for w in weights:
+        l = len(w.shape)
+        s,c = calculate_sum(w, 1, l)    
+        weight_sum += s
+        weight_count += c
+    
+    weight_mean = weight_sum/weight_count
+    print(weight_mean, weight_sum, weight_count)
+   
+    ## (2) calculate the standard deviation through mean
+    
+    for w in weights:
+        l = len(w.shape)
+        weight_std += calculate_std(w, weight_mean, 1, l)    
+        
+    weight_std = math.sqrt(weight_std/weight_count)
+    print("weight_std = ", weight_std)
+    ## (3) transform the distribution to normal distribution
+    for w in weights:
+        l = len(w.shape)
+        transform_distribution(w, weight_mean, weight_std, 1, l)
+
+    return weights
+
+def update_weights_to_robust_scale(weights, percent):
+    #### Method: w' = (w - mid(W))/(Pmax - Pmin)
+    # where mid(W) is the median of weights, Pmax is the weights with smaller percent%, Pmin is the weights with smaller (1-percent)%
+    vweights = []
+    weight_count = 0
+    for w in weights:
+        l = len(w.shape)
+        _vectorize_weights(w,vweights,1,l)
+    # (1) calculate the median
+    weight_count = len(vweights)
+    vweights.sort()
+    print(weight_count)
+    weight_median = 0.5 * (vweights[weight_count>>1] + vweights[(weight_count>>1)+1])
+
+    # (2) calculate Pmax and Pmin
+    pmin = int((1-percent)*weight_count)
+    pmax = int(percent*weight_count)    
+    weight_std = vweights[pmax]-vweights[pmin]
+
+    # (3) update weights
+    for w in weights:
+        l = len(w.shape)
+        transform_distribution(w, weight_median, weight_std, 1, l)
+
+    return weights
+def _vectorize_weights(weights, v, level, total_level):
+    for w in weights:
+        if level<total_level:
+            _vectorize_weights(w,v, level+1, total_level)
+        else:
+            v.append(w)
+#### Print weight distribution histogram ####
+def print_weight_hist(weights):
+    vweights = []
+    for w in weights:
+        l = len(w.shape)
+        _vectorize_weights(w,vweights,1,l)
+    
+    import matplotlib.pyplot as plt
+    plt.hist(vweights,600)
+    plt.show()
+

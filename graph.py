@@ -53,7 +53,7 @@ def binarize(M, binarize_t):
     return M
     
 
-def adjacency(signals, metric=None):
+def adjacency(signals, metric=None, shape=0):
     '''
     Build matrix A  of dimensions nxn where a_{ij} = metric(a_i, a_j).
     signals: nxm matrix where each row (signal[k], k=range(n)) is a signal. 
@@ -62,7 +62,8 @@ def adjacency(signals, metric=None):
     
     ''' Get input dimensions '''
     shape0,shape1 = signals.shape
-    if shape0<1000 or shape1>1000 and shape0>shape1:
+    #if shape0<1000 or shape1>1000 and shape0>shape1:
+    if shape==1:
         signals = np.reshape(signals, (signals.shape[1], -1))
     else:
         signals = np.reshape(signals, (signals.shape[0], -1))
@@ -102,7 +103,7 @@ def signal_dimension_adjusting(signals, sz_chunk):
         sz = np.prod(np.shape(s)[1:])
         
         if sz >= sz_chunk:
-            [splits.append(np.transpose(x)) for x in np.array_split(s, sz/sz_chunk, axis=1)]
+            [splits.append(np.transpose(x)) for x in np.array_split(s[:,:sz_chunk*int(sz/sz_chunk)], sz/sz_chunk, axis=1)]
         else:
             splits.append([np.transpose(s)])
     for s in splits:

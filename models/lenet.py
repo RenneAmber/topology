@@ -33,7 +33,7 @@ class LeNetExt(nn.Module):
     def __init__(self, n_channels, num_classes):
         super(LeNetExt, self).__init__()
         self.conv1 = nn.Conv2d(n_channels, 10, kernel_size=5)
-        self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=7)
         self.conv2_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(320, 120)
         self.fc2 = nn.Linear(120, 120)
@@ -41,9 +41,13 @@ class LeNetExt(nn.Module):
         self.fc4 = nn.Linear(84, num_classes)
 
     def forward(self, x):
+  #      print("0",x.shape)
         out = F.relu(F.max_pool2d(self.conv1(x), 2))
+  #      print("1",out.shape)
         out = F.relu(F.max_pool2d(self.conv2_drop(self.conv2(out)), 2))
+  #      print("2",out.shape)
         out = out.view(-1, 320)
+  #      print("3",out.shape)
         out = F.relu(self.fc1(out))
         out = F.relu(self.fc2(out))
         out = F.relu(self.fc3(out))

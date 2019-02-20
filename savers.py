@@ -55,3 +55,11 @@ def save_losses(losses, path, fname):
     
     with open(path+fname, 'wb') as f:
         pkl.dump(losses, f, protocol=2)
+
+def save_weights(weights, path, fname):
+    """ Save weights (np.ndarray of [mean, stardard deviation, min, max]) to path with fname """
+    if not os.path.exists(path):
+        os.makedirs(path)
+    
+    with open(path+fname, 'wb') as f:
+        pkl.dump(weights, f, protocol=2)

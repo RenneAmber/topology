@@ -13,7 +13,8 @@ parser.add_argument('--permute_labels', type=float)
 parser.add_argument('--subset', type=float)
 args = parser.parse_args()
 
-PATH = '/data/data1/datasets/cvpr2019/adjacency/' + args.net + '_' + args.dataset + '/'
+#PATH = '/data/data1/datasets/cvpr2019/adjacency/' + args.net + '_' + args.dataset + '/'
+PATH = '../../data/adjacency/' + args.net + '_' + args.dataset + '/'
 
 bettis = {}
 for e in args.epochs:
@@ -27,13 +28,17 @@ for e in args.epochs:
             content = f.readlines()
 
         content = content[0].split(',')[1:1+args.n_bettis]
-        content = [int(x) for x in content]
-
-        
-        epoch['t_{}'.format(t)] = content
+        content_ints = []
+        for x in content:
+            try:      
+                content_ints.append(int(x))
+            except ValueError:
+                content_ints.append(0)
+            
+        epoch['t_{}'.format(t)] = content_ints
 
     bettis['epc_{}'.format(e)] = epoch
 
 ''' Save bettis '''
-with open(PATH + 'bettis_p{}_s{}.pkl'.format(args.permute_labels, args.subset), "wb") as f:
+with open(PATH + 'bettis_trl{}_p{}_s{}.pkl'.format(args.trial, args.permute_labels, args.subset), "wb") as f:
     pickle.dump(bettis, f, pickle.HIGHEST_PROTOCOL)
