@@ -47,8 +47,11 @@ def init_params(net):
             if m.bias:
                 init.constant(m.bias, 0)
 
-
-_, term_width = os.popen('stty size', 'r').read().split()
+try:
+    _, term_width = os.popen('stty size', 'r').read().split()
+except ValueError:
+    term_width = 0
+    
 term_width = int(term_width)
 
 TOTAL_BAR_LENGTH = 65.
@@ -215,7 +218,7 @@ def update_weights_to_robust_scale(weights, percent):
     # (1) calculate the median
     weight_count = len(vweights)
     vweights.sort()
-    print(weight_count)
+    print("[utils update_weights_to_robust_scale] weight count is",weight_count)
     weight_median = 0.5 * (vweights[weight_count>>1] + vweights[(weight_count>>1)+1])
 
     # (2) calculate Pmax and Pmin
@@ -226,6 +229,7 @@ def update_weights_to_robust_scale(weights, percent):
     # (3) update weights
     for w in weights:
         l = len(w.shape)
+        print("curr layer shape is", w.shape)
         transform_distribution(w, weight_median, weight_std, 1, l)
 
     return weights

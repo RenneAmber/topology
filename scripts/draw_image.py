@@ -58,17 +58,19 @@ else:
     for index, epc in enumerate(epc_dict):
         epc_num = int(epc[4:])
         epc_label = "%s(tr%.2f,te%.2f)" % (epc, loss_dict[epc_num]['acc_tr'], loss_dict[epc_num]['acc_te'])
+        epc_item = epc_dict[epc][0]
+
         if epc_num == 0:
-            bettis1_epc0 = [epc_dict[epc][t][0] for t in epc_dict[epc]]
+            bettis1_epc0 = [epc_item[t][0] for t in epc_item]
             continue
-        bettis1 = [(epc_dict[epc][t][0]-bettis1_epc0[i])/bettis1_epc0[i] for i,t in enumerate(epc_dict[epc])]
-        bettis2 = [epc_dict[epc][t][1] for t in epc_dict[epc]]
-        bettis3 = [epc_dict[epc][t][2] for t in epc_dict[epc]]
+        bettis1 = [(epc_item[t][0]-bettis1_epc0[i])/bettis1_epc0[i] for i,t in enumerate(epc_item)]
+        bettis2 = [epc_item[t][1] for t in epc_item]
+        bettis3 = [epc_item[t][2] for t in epc_item]
         print(epc, bettis1)
         #print("======",weight_dict[epc])
         #print(epc, bettis2)
         #print(epc, bettis3)
-        edge_density = [t[2:] for t in epc_dict[epc]]
+        edge_density = [t[2:] for t in epc_item]
         plt.plot( edge_density[:], bettis1[:], color=colors[index % 13], label=epc_label)
         # plt.plot( edge_density[0:20], bettis2[0:20], color=colors[index % 12], label=epc_label)
         # plt.plot( edge_density[0:20], bettis3[0:20], color=colors[index % 12], label=epc_label)

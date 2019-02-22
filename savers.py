@@ -63,3 +63,11 @@ def save_weights(weights, path, fname):
     
     with open(path+fname, 'wb') as f:
         pkl.dump(weights, f, protocol=2)
+
+def save_badj(thresholds, adj, save_dir, epoch, trial):
+    from graph import binarize
+    for threshold in thresholds:
+        badj = binarize(np.copy(adj), threshold)
+        print('t={} s={}'.format(threshold, np.sum(badj)))
+        np.savetxt(save_dir + 'badj_epc%d_t%.2f_trl%d.csv' % (int(epoch), float(threshold), int(trial)), badj, fmt='%d', delimiter=",")
+
